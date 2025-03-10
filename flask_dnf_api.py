@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
 import requests
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
+# 환경 변수 불러오기
+load_dotenv()
 BASE_URL = "https://api.neople.co.kr/df/"
-API_KEY = "Wpy38ZLBWbGpLg2eYta2ClT5epevkAsr"
+API_KEY = os.getenv("Wpy38ZLBWbGpLg2eYta2ClT5epevkAsr")  # 환경 변수로 API 키 관리
 
 @app.route('/')
 def home():
@@ -19,16 +23,16 @@ def get_character_equipment():
         return jsonify({"error": "캐릭터명을 입력해주세요."}), 400
     
     character_endpoint = f"servers/{server}/characters"
-    params = {"characterName": character_name, "wordType": "full"}
+    params = {"characterName": character_name, "wordType": "full", "apikey": API_KEY}
 
-    character_response = requests.get(f"{BASE_URL}{character_endpoint}?apikey={API_KEY}", params=params)
+    character_response = requests.get(BASE_URL + character_endpoint, params=params)
     if character_response.status_code == 200:
         character_data = character_response.json()
         if "rows" in character_data and character_data["rows"]:
             character_id = character_data["rows"][0]["characterId"]
 
             equip_endpoint = f"servers/{server}/characters/{character_id}/equip/equipment"
-            equip_response = requests.get(f"{BASE_URL}{equip_endpoint}?apikey={API_KEY}")
+            equip_response = requests.get(BASE_URL + equip_endpoint, params={"apikey": API_KEY})
 
             if equip_response.status_code == 200:
                 return jsonify(equip_response.json())
@@ -37,4 +41,4 @@ def get_character_equipment():
         return jsonify({"error": f"API 요청 실패: {character_response.status_code}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
